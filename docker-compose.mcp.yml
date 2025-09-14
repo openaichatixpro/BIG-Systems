@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  mcp-registry:
+    image: ghcr.io/docker/mcp-registry:latest
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - MCP_REGISTRY_PORT=8080

@@ -1,0 +1,19 @@
+# docker-compose.host.yml
+# Optional override to store Ollama models on a large host drive.
+# This is for your machine where drive I: has plenty of free space.
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.host.yml up -d
+
+services:
+  ollama:
+    volumes:
+      # Bind a host path (set HOST_OLLAMA_MODELS_PATH in your environment or .env) to container's models dir
+      # Example .env sets HOST_OLLAMA_MODELS_PATH=I:/ollama_models
+      - "${HOST_OLLAMA_MODELS_PATH:-I:/ollama_models}:/root/.ollama"
+    # If you have GPU support and Docker is configured with nvidia, you can uncomment below
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]

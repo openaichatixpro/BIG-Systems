@@ -1,0 +1,72 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"          # Vite dev (change to 80 if you build production)
+    volumes:
+      - ./frontend:/app
+    environment:
+      - VITE_BACKEND_URL=http://host.docker.internal:3001
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend:/app
+      - big_data:/data:rw            # mount your input folders here
+      - output:/output:rw            # processed outputs (jsonl/csv)
+    environment:
+      - WATCH_FOLDER=/data
+      - OUTPUT_FOLDER=/output
+      - BATCH_SIZE=50000
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama   # persist models & settings
+    environment:
+      - OLLAMA_PASSWORD=               # optional
+    restart: unless-stopped
+
+  ollama-init:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    volumes:
+      - ollama_models:/root/.ollama
+    entrypoint: ["/bin/sh","-c"]
+    # this will try to pull a set of models into the shared volume, then exit
+    # WARNING: these models may be large (many GB). Ensure HOST_OLLAMA_MODELS_PATH has enough free space.
+    command:
+      - |
+        echo "Waiting for ollama to be ready..." &&
+        sleep 4 &&
+        echo "Pulling gemma3n:e4b (may take time)..." &&
+        ollama pull gemma3n:e4b || true &&
+        echo "Pulling magistral:24b (may take time)..." &&
+        ollama pull magistral:24b || true &&
+        echo "Pulling gpt-oss:20b (may take time)..." &&
+        ollama pull gpt-oss:20b || true &&
+        echo "Done pulling (if connection available)." &&
+        exit 0
+    restart: "no"
+
+volumes:
+  ollama_models:
+  big_data:
+  output:
